@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>— Simulasi Penjadwalan CPU Berbasis AR/VR & GenAI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #070d19;
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Aksen Garis Sasirangan Banjar (Emas, Toska, Merah Marun) */
+    .sasirangan-accent {
+      background-image: linear-gradient(90deg, #0d9488 0%, #eab308 50%, #dc2626 100%);
+    }
+    .glass-panel {
+      background: rgba(13, 21, 38, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    #canvas-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 410px;
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+    #canvas-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      touch-action: none;
+    }
+    .hotspot-marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      z-index: 20;
+    }
+    .hotspot-marker:hover {
+      transform: translate(-50%, -50%) scale(1.18);
+    }
+    .vr-split-overlay {
+      pointer-events: none;
+      background: radial-gradient(circle at 25% 50%, transparent 33%, rgba(2, 6, 23, 0.92) 48%),
+                  radial-gradient(circle at 75% 50%, transparent 33%, rgba(2, 6, 23, 0.92) 48%);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.35);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <!-- Garis Aksen Kearifan Lokal Banjar -->
+  <div class="h-1.5 w-full sasirangan-accent"></div>
+
+  <!-- Header Utama -->
+  <header class="glass-panel sticky top-0 z-40 px-4 py-3 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-teal-600 to-slate-900 flex items-center justify-center shadow-lg border border-amber-400/40">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="font-bold text-base sm:text-lg text-white tracking-tight">BanjarOS XR</h1>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">Sistem Operasi • CPU Scheduling</span>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40">AR/VR + GenAI</span>
+          </div>
+          <p class="text-xs text-slate-400">Visualisasi Penjadwalan Proses CPU & Metafora Antrean Kelotok Pasar Terapung Lok Baintan</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btn-audio" onclick="toggleAudio()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 flex items-center gap-1.5 transition" title="Suara Clock CPU & Transisi Proses">
+          <span id="audio-icon">🔇</span>
+          <span id="audio-label" class="hidden sm:inline">Audio CPU: Mati</span>
+        </button>
+
+        <button onclick="openModal('modal-guide')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
+          <span>📖</span>
+          <span>Panduan</span>
+        </button>
+
+        <button onclick="openModal('modal-report')" class="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow flex items-center gap-1.5 transition">
+          <span>📄</span>
+          <span>Draf Laporan PDF</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notifikasi Toast (Pengganti alert) -->
+  <div id="toast-box" class="fixed bottom-5 right-5 z-50 hidden max-w-sm glass-panel border-l-4 border-amber-400 px-4 py-3 rounded-xl shadow-2xl text-sm text-slate-100">
+    <div class="flex items-start gap-2.5">
+      <span>⚡</span>
+      <p id="toast-message" class="leading-snug text-xs"></p>
+    </div>
+  </div>
+
+  <!-- Layout Utama 12 Kolom -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+    
+    <!-- KOLOM KIRI (7 Kolom): Viewport 3D/AR/VR, Gantt Chart & Laboratorium Algoritma CPU -->
+    <section class="lg:col-span-7 flex flex-col gap-4">
+      
+      <!-- Toolbar Mode XR & Kontrol Kamera -->
+      <div class="glass-panel p-3 rounded-2xl flex flex-wrap items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-1.5" role="tablist">
+          <button id="mode-3d" onclick="setXRMode('3d')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500 text-slate-950 shadow transition">
+            🧊 Inspeksi 3D
+          </button>
+          <button id="mode-vr" onclick="setXRMode('vr')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+            🥽 Mode VR 360°
+          </button>
+          <button id="mode-ar" onclick="setXRMode('ar')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+            📱 Kamera AR
+          </button>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button onclick="toggleAutoRotate()" id="btn-rotate" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700">
+            🔄 Orbit: Aktif
+          </button>
+          <button onclick="resetCamera()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700">
+            🎯 Reset Sudut
+          </button>
+        </div>
+      </div>
+
+      <!-- Kanvas 3D / AR / VR Ruang Eksekusi CPU & Dermaga Lok Baintan -->
+      <div class="glass-panel p-2 rounded-2xl shadow-2xl flex flex-col">
+        <div id="canvas-container" class="bg-slate-950 min-h-[390px] sm:min-h-[430px]">
+          <video id="ar-video" autoplay playsinline muted class="hidden absolute inset-0 w-full h-full object-cover z-0"></video>
+
+          <!-- Overlay VR Stereoskopik -->
+          <div id="vr-overlay" class="hidden absolute inset-0 vr-split-overlay z-10 flex items-center justify-center">
+            <div class="w-0.5 h-full bg-slate-950/90"></div>
+          </div>
+
+          <!-- HUD Status Eksekusi CPU Real-Time -->
+          <div class="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <span id="xr-badge" class="px-2.5 py-1 rounded-lg bg-slate-900/90 border border-amber-500/40 text-[11px] font-semibold text-amber-300">
+              MODE 3D • Dermaga CPU & Antrean Kelotok Lok Baintan
+            </span>
+
+            <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-700 px-3 py-1 rounded-lg font-mono-code text-xs">
+              <span class="text-slate-400">Clock:</span>
+              <span id="hud-clock" class="text-amber-400 font-bold">0 ms</span>
+              <span class="text-slate-600">|</span>
+              <span class="text-slate-400">CPU Core:</span>
+              <span id="hud-running" class="text-teal-400 font-bold">IDLE</span>
+            </div>
+          </div>
+
+          <!-- Banner Kearifan Lokal & Petunjuk Hotspot -->
+          <div class="absolute bottom-3 left-3 right-3 z-20 pointer-events-none flex flex-wrap items-end justify-between gap-2">
+            <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3 py-2 rounded-xl max-w-md">
+              <p class="text-[11px] font-semibold text-amber-400">🛶 Analogi Kearifan Lokal: Antrean Kelotok Lok Baintan</p>
+              <p class="text-[11px] text-slate-300 mt-0.5">Setiap perahu kelotok = <strong>PCB (Process)</strong>, muatan = <strong>Burst Time</strong>, dermaga transaksi = <strong>CPU Core</strong>. Klik pin (1–4) untuk bedah konsep.</p>
+            </div>
+            <div id="ar-placement-hint" class="hidden bg-amber-500 text-slate-950 px-3 py-1.5 rounded-xl text-xs font-bold shadow">
+              Kamera AR Aktif — Proyeksi Ruang CPU di Meja Belajar
+            </div>
+          </div>
+
+          <!-- 4 Hotspot Interaktif pada Scene 3D -->
+          <button id="hs-0" onclick="selectHotspot(0)" class="hotspot-marker w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg ring-4 ring-amber-500/30 flex items-center justify-center" title="1. Ready Queue & Antrean Dermaga">1</button>
+          <button id="hs-1" onclick="selectHotspot(1)" class="hotspot-marker w-8 h-8 rounded-full bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs shadow-lg ring-4 ring-teal-500/30 flex items-center justify-center" title="2. CPU Core & Context Switch">2</button>
+          <button id="hs-2" onclick="selectHotspot(2)" class="hotspot-marker w-8 h-8 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs shadow-lg ring-4 ring-sky-500/30 flex items-center justify-center" title="3. Time Quantum & Preemption">3</button>
+          <button id="hs-3" onclick="selectHotspot(3)" class="hotspot-marker w-8 h-8 rounded-full bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs shadow-lg ring-4 ring-rose-500/30 flex items-center justify-center" title="4. Starvation & Aging">4</button>
+        </div>
+      </div>
+
+      <!-- Panel Gantt Chart Real-Time & Metrik Kinerja CPU -->
+      <div class="glass-panel p-4 rounded-2xl space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              <span>📊 Gantt Chart Eksekusi & Metrik Kinerja CPU</span>
+            </h2>
+            <p class="text-xs text-slate-400">Visualisasi linimasa eksekusi proses dan perpindahan konteks (Context Switch).</p>
+          </div>
+          <span id="context-switch-badge" class="font-mono-code text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-amber-300 border border-amber-500/30">
+            Context Switches: 0
+          </span>
+        </div>
+
+        <!-- Bar Gantt Chart -->
+        <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3 overflow-x-auto">
+          <div id="gantt-container" class="flex items-stretch min-h-[46px] min-w-full gap-0.5">
+            <div class="text-xs text-slate-500 flex items-center justify-center w-full py-2">
+              Tekan tombol "Jalankan (Play)" atau "Langkah (+1 ms)" untuk memulai simulasi penjadwalan CPU.
+            </div>
+          </div>
+          <div id="gantt-timeline" class="flex justify-between text-[10px] font-mono-code text-slate-400 mt-1.5 px-0.5"></div>
+        </div>
+
+        <!-- 4 Kartu Metrik Kinerja -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+            <p class="text-[11px] text-slate-400">Avg. Waiting Time (AWT)</p>
+            <p id="metric-awt" class="font-mono-code text-base font-bold text-amber-400 mt-0.5">0.00 ms</p>
+          </div>
+          <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+            <p class="text-[11px] text-slate-400">Avg. Turnaround (ATAT)</p>
+            <p id="metric-atat" class="font-mono-code text-base font-bold text-teal-400 mt-0.5">0.00 ms</p>
+          </div>
+          <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+            <p class="text-[11px] text-slate-400">Avg. Response (ART)</p>
+            <p id="metric-art" class="font-mono-code text-base font-bold text-sky-400 mt-0.5">0.00 ms</p>
+          </div>
+          <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+            <p class="text-[11px] text-slate-400">CPU Utilization</p>
+            <p id="metric-util" class="font-mono-code text-base font-bold text-emerald-400 mt-0.5">0.0%</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Laboratorium Input Proses & Kontrol Algoritma -->
+      <div class="glass-panel p-4 rounded-2xl space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-sm font-bold text-white">⚙️ Konfigurasi Algoritma & Tabel Proses (PCB)</h2>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button onclick="addProcessRow()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-teal-300 border border-slate-700 font-medium">+ Tambah</button>
+            <button onclick="randomizeProcesses()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-amber-300 border border-slate-700 font-medium">🎲 Acak Data</button>
+          </div>
+        </div>
+
+        <!-- Pengaturan Algoritma, Time Quantum, dan Kecepatan -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+          <div>
+            <label for="algo-select" class="block text-[11px] font-medium text-slate-400 mb-1">Algoritma Penjadwalan</label>
+            <select id="algo-select" onchange="onAlgorithmChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500">
+              <option value="FCFS">FCFS (First-Come, First-Served)</option>
+              <option value="SJF">SJF (Shortest Job First - Non-Preemptive)</option>
+              <option value="SRTF">SRTF (Shortest Remaining Time First)</option>
+              <option value="PRIORITY_NP">Priority (Non-Preemptive, 1=Tertinggi)</option>
+              <option value="PRIORITY_P">Priority (Preemptive, 1=Tertinggi)</option>
+              <option value="RR" selected>Round Robin (RR - Time Sharing)</option>
+            </select>
+          </div>
+
+          <div id="quantum-control-box">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-400 font-medium">Time Quantum (RR)</span>
+              <span id="val-quantum" class="font-mono-code text-amber-400 font-bold">2 ms</span>
+            </div>
+            <input id="slider-quantum" type="range" min="1" max="6" step="1" value="2" oninput="updateQuantumLabel()" class="w-full accent-amber-500 cursor-pointer" />
+            <p class="text-[10px] text-slate-500 mt-0.5">Batas waktu transaksi kelotok di dermaga</p>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-400 font-medium">Kecepatan Simulasi</span>
+              <span id="val-speed" class="font-mono-code text-teal-400 font-bold">1.0x</span>
+            </div>
+            <input id="slider-speed" type="range" min="0.5" max="2.5" step="0.5" value="1" oninput="updateSpeedLabel()" class="w-full accent-teal-500 cursor-pointer" />
+            <p class="text-[10px] text-slate-500 mt-0.5">Interval tick CPU per milidetik</p>
+          </div>
+        </div>
+
+        <!-- Tombol Kontrol Eksekusi -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btn-play" onclick="togglePlaySimulation()" class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow transition">
+            ▶️ Jalankan (Play)
+          </button>
+          <button onclick="stepSimulation()" class="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-xs font-semibold text-white transition">
+            ⏭️ Langkah (+1 ms)
+          </button>
+          <button onclick="resetSimulation()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition">
+            🔄 Reset Simulasi
+          </button>
+        </div>
+
+        <!-- Tabel Input Proses -->
+        <div class="overflow-x-auto border border-slate-800 rounded-xl">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-900 text-slate-300 border-b border-slate-800">
+                <th class="py-2 px-3">Proses (Kelotok)</th>
+                <th class="py-2 px-2">Arrival (ms)</th>
+                <th class="py-2 px-2">Burst (ms)</th>
+                <th class="py-2 px-2">Priority (1=Tinggi)</th>
+                <th class="py-2 px-2">Sisa Burst</th>
+                <th class="py-2 px-2">Status</th>
+                <th class="py-2 px-2 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="process-table-body" class="divide-y divide-slate-800/80 bg-slate-950/60 font-mono-code"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- KOLOM KANAN (5 Kolom): Bedah Konsep OS, AI Tutor & Evaluasi HOTS -->
+    <aside class="lg:col-span-5 flex flex-col gap-4">
+      
+      <!-- Tab Navigasi -->
+      <div class="glass-panel p-1.5 rounded-2xl grid grid-cols-3 gap-1">
+        <button id="tab-btn-bedah" onclick="switchRightTab('bedah')" class="py-2 px-2 rounded-xl text-xs font-semibold bg-amber-500 text-slate-950 transition">
+          🏛️ Bedah Konsep
+        </button>
+        <button id="tab-btn-tutor" onclick="switchRightTab('tutor')" class="py-2 px-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+          🤖 Asisten OS (AI)
+        </button>
+        <button id="tab-btn-hots" onclick="switchRightTab('hots')" class="py-2 px-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition">
+          🧠 Studi Kasus HOTS
+        </button>
+      </div>
+
+      <!-- TAB 1: Bedah Konsep Sistem Operasi & Kearifan Lokal -->
+      <div id="tab-bedah" class="glass-panel p-4 rounded-2xl flex-1 flex flex-col justify-between gap-4">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span id="hs-category" class="text-[11px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              Hotspot 1 dari 4 • Manajemen Antrean
+            </span>
+            <div class="flex gap-1">
+              <button onclick="selectHotspot((currentHotspot + 3) % 4)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs">◀</button>
+              <button onclick="selectHotspot((currentHotspot + 1) % 4)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs">▶</button>
+            </div>
+          </div>
+
+          <h3 id="hs-title" class="text-lg font-bold text-white">Ready Queue & Antrean Dermaga Lok Baintan</h3>
+
+          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">
+            <p class="text-xs font-semibold text-teal-400">💻 Konsep Inti Sistem Operasi:</p>
+            <p id="hs-science" class="text-xs text-slate-300 leading-relaxed"></p>
+          </div>
+
+          <div class="p-3 rounded-xl bg-amber-950/30 border border-amber-600/30 space-y-1.5">
+            <p class="text-xs font-semibold text-amber-400">🛶 Analogi Kearifan Lokal Banjar:</p>
+            <p id="hs-culture" class="text-xs text-slate-200 leading-relaxed"></p>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-900/70 border border-slate-800">
+            <p class="text-xs font-semibold text-sky-400 mb-1">💡 Pertanyaan Refleksi Mandiri:</p>
+            <p id="hs-prompt" class="text-xs text-slate-300 italic"></p>
+          </div>
+        </div>
+
+        <button onclick="askTutorAboutCurrentHotspot()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-teal-600 hover:from-amber-400 hover:to-teal-500 text-xs font-bold text-slate-950 shadow-lg flex items-center justify-center gap-2 transition">
+          <span>✨ Diskusikan Konsep Ini dengan Asisten OS (AI)</span>
+        </button>
+      </div>
+
+      <!-- TAB 2: Asisten Tutor Kognitif Gemini AI -->
+      <div id="tab-tutor" class="hidden glass-panel p-4 rounded-2xl flex-1 flex flex-col justify-between gap-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div>
+            <h3 class="text-sm font-bold text-white">Asisten OS "Kai Banjar" (Gemini AI)</h3>
+            <p class="text-[11px] text-slate-400">Membaca algoritma, tabel proses & metrik simulasi Anda secara real-time</p>
+          </div>
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" title="Gemini AI Terhubung"></span>
+        </div>
+
+        <div id="chat-messages" class="flex-1 overflow-y-auto max-h-[340px] space-y-2.5 pr-1">
+          <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl text-xs text-slate-200 leading-relaxed">
+            <span class="font-semibold text-amber-400 block mb-1">Kai Banjar (Asisten OS):</span>
+            Selamat datang di laboratorium virtual Penjadwalan CPU! Saya terhubung langsung dengan simulasi Anda. Silakan jalankan salah satu algoritma (FCFS, SJF, SRTF, Priority, atau Round Robin), lalu tanyakan analisis <em>Convoy Effect</em>, <em>Starvation</em>, pemilihan <em>Time Quantum</em>, atau perbandingan metrik AWT dan ATAT!
+          </div>
+        </div>
+
+        <!-- Pertanyaan Cepat Kontekstual -->
+        <div class="flex flex-wrap gap-1.5">
+          <button onclick="quickAsk('Analisis hasil metrik simulasi saya saat ini (AWT, ATAT, Context Switch) dan bandingkan dengan algoritma lain!')" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition">
+            + Analisis Hasil Simulasi Saya
+          </button>
+          <button onclick="quickAsk('Jelaskan terjadinya Convoy Effect pada FCFS menggunakan analogi perahu kelotok bermuatan besar di Pasar Terapung!')" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700 transition">
+            + Convoy Effect & Kelotok
+          </button>
+        </div>
+
+        <form onsubmit="handleChatSubmit(event)" class="flex gap-2">
+          <input id="chat-input" type="text" placeholder="Tanyakan analisis penjadwalan CPU..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+          <button id="btn-send-chat" type="submit" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition">
+            Kirim
+          </button>
+        </form>
+      </div>
+
+      <!-- TAB 3: Generator Studi Kasus & Evaluasi HOTS (C4 - C6) -->
+      <div id="tab-hots" class="hidden glass-panel p-4 rounded-2xl flex-1 flex flex-col justify-between gap-3">
+        <div class="space-y-3 overflow-y-auto max-h-[430px] pr-1">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              Evaluasi Kognitif HOTS (C4 Analisis – C6 Sintesis)
+            </span>
+            <button id="btn-gen-case" onclick="generateHOTSCase()" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 font-medium transition">
+              🔄 Kasus Baru (AI)
+            </button>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-1.5">
+            <p class="text-xs font-bold text-amber-400">📋 Skenario Masalah Penjadwalan Sistem Operasi:</p>
+            <p id="hots-question" class="text-xs text-slate-200 leading-relaxed">
+              Sebuah server transaksi logistik sungai di Banjarmasin menangani 4 jenis proses bersamaan: P1 (Darurat Keselamatan Sungai, Burst=2ms, Priority=1), P2 (Rekapitulasi Harian Gudang, Burst=12ms, Priority=4), P3 (Validasi Tiket Jukung, Burst=3ms, Priority=2), dan P4 (Sinkronisasi Cuaca BMKG, Burst=4ms, Priority=2). Jika admin menggunakan FCFS murni, terjadi Convoy Effect yang menunda layanan darurat. Rancanglah kombinasi algoritma penjadwalan (misalnya Multilevel Queue dengan Round Robin & Aging) serta tentukan nilai Time Quantum optimalnya untuk mencegah starvation pada P2!
+            </p>
+          </div>
+
+          <div>
+            <label for="hots-answer" class="block text-xs font-medium text-slate-300 mb-1">Analisis & Rancangan Solusi Anda:</label>
+            <textarea id="hots-answer" rows="5" placeholder="Tuliskan analisis pemilihan algoritma, alasan penetapan Time Quantum, mekanisme Aging untuk mencegah starvation, serta kaitannya dengan keteraturan antrean..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"></textarea>
+          </div>
+
+          <button id="btn-eval-hots" onclick="evaluateHOTSAnswer()" class="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-xs font-bold text-white shadow transition">
+            🎯 Nilai Jawaban Berdasarkan Rubrik HOTS (AI)
+          </button>
+
+          <div id="hots-feedback-box" class="hidden p-3 rounded-xl bg-slate-900/95 border border-amber-500/40 space-y-1">
+            <p class="text-xs font-bold text-amber-400">📊 Hasil Penilaian & Umpan Balik Rubrik AI:</p>
+            <div id="hots-feedback-text" class="text-xs text-slate-200 leading-relaxed whitespace-pre-line"></div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Modal Panduan Penggunaan -->
+  <div id="modal-guide" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel max-w-lg w-full rounded-2xl p-5 border border-slate-700 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white">📖 Panduan Penggunaan BanjarOS XR</h3>
+        <button onclick="closeModal('modal-guide')" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <ol class="text-xs text-slate-300 space-y-2.5 list-decimal pl-4 leading-relaxed">
+        <li><strong>Eksplorasi 3D, VR 360° & Kamera AR:</strong> Seret kanvas 3D untuk memutar sudut pandang dermaga CPU, pilih <em>Mode VR 360°</em> untuk tampilan binokular imersif, atau aktifkan <em>Kamera AR</em> untuk memproyeksikan ruang CPU ke atas meja belajar Anda.</li>
+        <li><strong>Bedah 4 Hotspot Interaktif:</strong> Klik pin angka (1–4) untuk memahami hubungan antara <em>Ready Queue, Context Switch, Time Quantum,</em> dan <em>Starvation</em> dengan budaya keteraturan antrean perahu kelotok di Pasar Terapung Lok Baintan.</li>
+        <li><strong>Simulasi Algoritma Real-Time:</strong> Ubah data <em>Arrival Time, Burst Time,</em> dan <em>Priority</em> pada tabel proses, pilih algoritma (FCFS, SJF, SRTF, Priority, Round Robin), lalu klik <strong>Jalankan (Play)</strong> atau <strong>Langkah (+1 ms)</strong> untuk mengamati pergerakan perahu proses masuk ke CPU Core dan pembentukan Gantt Chart.</li>
+        <li><strong>Tutor Kognitif & Evaluasi HOTS Gemini AI:</strong> Diskusikan hasil simulasi secara real-time dengan <em>Asisten OS</em> atau kerjakan tantangan <em>Studi Kasus HOTS</em> untuk mendapatkan umpan balik berbasis rubrik.</li>
+      </ol>
+      <div class="flex justify-end pt-2">
+        <button onclick="closeModal('modal-guide')" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold">Mulai Eksplorasi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Draf Ringkasan Laporan Analisis PDF -->
+  <div id="modal-report" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel max-w-2xl w-full rounded-2xl p-5 border border-slate-700 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-white">📄 Draf Ringkasan Laporan Analisis (Siap Salin ke PDF)</h3>
+        <button onclick="closeModal('modal-report')" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+      <p class="text-xs text-slate-400">Gunakan draf analisis di bawah ini untuk melengkapi dokumen PDF tugas Anda sesuai rubrik penilaian.</p>
+      <textarea id="report-draft-text" rows="12" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 leading-relaxed focus:outline-none"></textarea>
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <button onclick="closeModal('modal-report')" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300">Tutup</button>
+        <button onclick="copyReportDraft()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow">📋 Salin Teks ke Clipboard</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. SUBSTANSI PEDAGOGIS SISTEM OPERASI & KEARIFAN LOKAL BANJAR
+    // =========================================================================
+    const HOTSPOTS = [
+      {
+        category: "Hotspot 1 dari 4 • Manajemen Antrean Proses",
+        title: "Ready Queue & Antrean Dermaga Lok Baintan",
+        science: "Ready Queue menyimpan daftar Process Control Block (PCB) yang berada di memori utama dan siap dieksekusi oleh CPU. Struktur antrean dapat berupa FIFO (pada FCFS/RR) maupun Priority Queue (pada SJF/Priority Scheduling).",
+        culture: "Di Pasar Terapung Lok Baintan (Sungai Martapura), para pedagang perahu kelotok menambatkan perahunya secara teratur menunggu giliran merapat ke dermaga atau perahu pembeli tanpa saling menyerobot, mencerminkan etika antrean yang tertib.",
+        prompt: "Bagaimana perbedaan struktur data Ready Queue antara algoritma FCFS dan Shortest Job First (SJF)?",
+        pos3D: new THREE.Vector3(-2.4, 1.3, 1.4)
+      },
+      {
+        category: "Hotspot 2 dari 4 • Eksekusi & Perpindahan Konteks",
+        title: "CPU Core & Dispatcher (Context Switch)",
+        science: "Dispatcher menyerahkan kendali CPU kepada proses yang dipilih Short-Term Scheduler. Ketika terjadi interupsi atau pergantian proses, CPU melakukan Context Switch—menyimpan state register/PCB proses lama dan memuat state PCB proses baru, yang menimbulkan overhead waktu.",
+        culture: "Momen satu perahu kelotok selesai bertransaksi di dermaga utama lalu mundur memberi ruang bagi perahu berikutnya menggambarkan mekanisme Context Switch: semakin tertib transisinya, semakin kecil waktu terbuang (overhead).",
+        prompt: "Mengapa nilai Time Quantum yang terlalu kecil pada Round Robin justru menurunkan efisiensi CPU akibat Context Switch?",
+        pos3D: new THREE.Vector3(0.2, 2.3, 0.0)
+      },
+      {
+        category: "Hotspot 3 dari 4 • Pembagian Waktu & Interupsi",
+        title: "Time Quantum & Mekanisme Preemption",
+        science: "Pada penjadwalan preemptive seperti Round Robin dan SRTF, proses yang sedang berjalan dapat dihentikan sementara (preempted) dan dikembalikan ke Ready Queue jika jatah Time Quantum habis atau datang proses baru dengan sisa waktu/prioritas lebih tinggi.",
+        culture: "Prinsip keadilan 'bagian sama rata' dalam budaya musyawarah Banjar memastikan setiap pedagang kecil mendapat kesempatan transaksi yang adil tanpa dimonopoli satu perahu besar berjam-jam.",
+        prompt: "Kapan algoritma Round Robin berperilaku identik dengan FCFS ditinjau dari rasio Time Quantum terhadap Burst Time?",
+        pos3D: new THREE.Vector3(1.8, 1.9, -1.1)
+      },
+      {
+        category: "Hotspot 4 dari 4 • Keadilan Sumber Daya",
+        title: "Starvation & Solusi Aging",
+        science: "Pada SJF atau Priority Scheduling, proses dengan Burst Time besar atau prioritas rendah berisiko mengalami Starvation (penundaan tanpa batas) jika proses kecil/prioritas tinggi terus berdatangan. Solusinya adalah Aging, yakni menaikkan prioritas proses secara bertahap seiring lamanya waktu tunggu.",
+        culture: "Nilai 'Bauntung dan Batuah' menekankan kepedulian sosial: perahu yang sudah menunggu paling lama di pinggir sungai secara alami diberi prioritas merapat agar tidak merugi sepanjang hari.",
+        prompt: "Rancanglah rumus sederhana mekanisme Aging agar proses berprioritas rendah tetap mendapat giliran eksekusi!",
+        pos3D: new THREE.Vector3(-2.6, 1.2, -1.8)
+      }
+    ];
+
+    const PROCESS_COLORS = [
+      { hex: '#f59e0b', num: 0xf59e0b, badge: 'bg-amber-500 text-slate-950' },
+      { hex: '#14b8a6', num: 0x14b8a6, badge: 'bg-teal-500 text-slate-950' },
+      { hex: '#38bdf8', num: 0x38bdf8, badge: 'bg-sky-400 text-slate-950' },
+      { hex: '#f43f5e', num: 0xf43f5e, badge: 'bg-rose-500 text-white' },
+      { hex: '#a855f7', num: 0xa855f7, badge: 'bg-purple-500 text-white' },
+      { hex: '#22c55e', num: 0x22c55e, badge: 'bg-emerald-500 text-slate-950' }
+    ];
+
+    // =========================================================================
+    // 2. STATE SIMULASI PENJADWALAN CPU
+    // =========================================================================
+    let processConfigs = [
+      { id: 'P1', arrival: 0, burst: 5, priority: 2 },
+      { id: 'P2', arrival: 1, burst: 3, priority: 1 },
+      { id: 'P3', arrival: 2, burst: 6, priority: 4 },
+      { id: 'P4', arrival: 3, burst: 2, priority: 3 }
+    ];
+
+    let sim = {
+      clock: 0,
+      isPlaying: false,
+      timerId: null,
+      processes: [],
+      readyQueue: [],
+      runningPid: null,
+      rrCounter: 0,
+      gantt: [],
+      contextSwitches: 0,
+      busyTime: 0,
+      completedCount: 0
+    };
+
+    let currentHotspot = 0;
+    let currentXRMode = '3d';
+    let autoRotate = true;
+    let arStream = null;
+
+    // =========================================================================
+    // 3. AUDIO SINTETIS CPU CLOCK & CONTEXT SWITCH (WEB AUDIO API)
+    // =========================================================================
+    let audioCtx = null;
+    let audioEnabled = false;
+
+    function toggleAudio() {
+      if (!audioEnabled) {
+        try {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          audioEnabled = true;
+          document.getElementById('audio-icon').textContent = '🔊';
+          document.getElementById('audio-label').textContent = 'Audio CPU: Aktif';
+          playTone(620, 0.08, 'sine');
+          showToast('Audio sintetis clock CPU dan context switch diaktifkan.');
+        } catch (e) {
+          showToast('Browser membatasi inisialisasi audio.');
+        }
+      } else {
+        audioEnabled = false;
+        if (audioCtx) {
+          try { audioCtx.close(); } catch (e) {}
+        }
+        document.getElementById('audio-icon').textContent = '🔇';
+        document.getElementById('audio-label').textContent = 'Audio CPU: Mati';
+      }
+    }
+
+    function playTone(freq = 440, duration = 0.08, type = 'sine') {
+      if (!audioEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // 4. VISUALISASI 3D RUANG EKSEKUSI CPU & DERMAGA KELOTOK (THREE.JS)
+    // =========================================================================
+    let scene, camera, renderer, cpuCoreMesh, coreRingMesh, boatMeshes = {};
+    let isDragging = false;
+    let prevPointer = { x: 0, y: 0 };
+    let spherical = { radius: 9.8, theta: 0.58, phi: 1.05 };
+
+    function init3D() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x070d19);
+      scene.fog = new THREE.FogExp2(0x070d19, 0.032);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+      updateCameraFromSpherical();
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      // Pencahayaan Studio Tech + Nuansa Emas Banjar
+      const ambient = new THREE.AmbientLight(0xe2e8f0, 0.7);
+      scene.add(ambient);
+
+      const keyLight = new THREE.DirectionalLight(0xfef08a, 1.15);
+      keyLight.position.set(7, 12, 8);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0x14b8a6, 0.65);
+      rimLight.position.set(-8, 6, -6);
+      scene.add(rimLight);
+
+      buildCPUDockEnvironment();
+      rebuild3DProcessBoats();
+      setupPointerControls(renderer.domElement);
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function buildCPUDockEnvironment() {
+      // Permukaan Sungai Martapura (Grid Sirkuit + Air)
+      const riverGeo = new THREE.CylinderGeometry(8.5, 8.5, 0.25, 40);
+      const riverMat = new THREE.MeshStandardMaterial({
+        color: 0x0f2942,
+        roughness: 0.25,
+        metalness: 0.4
+      });
+      const river = new THREE.Mesh(riverGeo, riverMat);
+      river.position.y = -0.15;
+      scene.add(river);
+
+      // Grid Digital di atas Sungai
+      const gridHelper = new THREE.GridHelper(13, 26, 0x0d9488, 0x1e293b);
+      gridHelper.position.y = 0.01;
+      scene.add(gridHelper);
+
+      // Dermaga Utama = CPU CORE EXECUTION UNIT
+      const dockBase = new THREE.Mesh(
+        new THREE.BoxGeometry(2.6, 0.45, 2.6),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.6 })
+      );
+      dockBase.position.set(0.2, 0.25, 0);
+      scene.add(dockBase);
+
+      // Bingkai Emas Khas Sasirangan di sekeliling CPU Core
+      const goldTrim = new THREE.Mesh(
+        new THREE.BoxGeometry(2.75, 0.12, 2.75),
+        new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.3, metalness: 0.8 })
+      );
+      goldTrim.position.set(0.2, 0.5, 0);
+      scene.add(goldTrim);
+
+      // Inti Prosesor (CPU Core Hologram / Menara Kontrol Dermaga)
+      cpuCoreMesh = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.65, 0),
+        new THREE.MeshStandardMaterial({
+          color: 0x14b8a6,
+          emissive: 0x0d9488,
+          emissiveIntensity: 0.45,
+          roughness: 0.2
+        })
+      );
+      cpuCoreMesh.position.set(0.2, 2.25, 0);
+      scene.add(cpuCoreMesh);
+
+      // Cincin Quantum / Time Slice di atas CPU Core
+      coreRingMesh = new THREE.Mesh(
+        new THREE.TorusGeometry(1.05, 0.05, 12, 36),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xb45309, emissiveIntensity: 0.4 })
+      );
+      coreRingMesh.rotation.x = Math.PI / 2;
+      coreRingMesh.position.set(0.2, 2.25, 0);
+      scene.add(coreRingMesh);
+
+      // Jalur Dermaga Antrean (Ready Queue Pier) di sisi kiri
+      const pier = new THREE.Mesh(
+        new THREE.BoxGeometry(3.4, 0.25, 0.7),
+        new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.8 }) // Kayu Ulin
+      );
+      pier.position.set(-2.7, 0.15, 0);
+      scene.add(pier);
+
+      // Area Proses Selesai (Terminated Dock) di sisi kanan
+      const donePier = new THREE.Mesh(
+        new THREE.BoxGeometry(2.4, 0.25, 0.7),
+        new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.7 })
+      );
+      donePier.position.set(3.1, 0.15, 0);
+      scene.add(donePier);
+    }
+
+    function rebuild3DProcessBoats() {
+      // Hapus objek kelotok lama
+      Object.values(boatMeshes).forEach(group => scene.remove(group));
+      boatMeshes = {};
+
+      processConfigs.forEach((p, idx) => {
+        const colorInfo = PROCESS_COLORS[idx % PROCESS_COLORS.length];
+        const group = new THREE.Group();
+
+        // Lambung Perahu Kelotok (PCB)
+        const hull = new THREE.Mesh(
+          new THREE.BoxGeometry(0.65, 0.24, 1.35),
+          new THREE.MeshStandardMaterial({ color: colorInfo.num, roughness: 0.4, metalness: 0.2 })
+        );
+        hull.position.y = 0.15;
+        group.add(hull);
+
+        // Atap / Muatan Kelotok (Tinggi proporsional dengan Burst Time)
+        const cargoHeight = Math.max(0.25, Math.min(1.3, p.burst * 0.14));
+        const cargo = new THREE.Mesh(
+          new THREE.BoxGeometry(0.45, cargoHeight, 0.75),
+          new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 })
+        );
+        cargo.position.y = 0.27 + cargoHeight / 2;
+        group.add(cargo);
+
+        // Posisi awal di area antrean kiri
+        group.position.set(-2.6, 0.05, -1.8 + idx * 0.95);
+        scene.add(group);
+        boatMeshes[p.id] = group;
+      });
+    }
+
+    function update3DBoatTargets() {
+      sim.processes.forEach((p, idx) => {
+        const mesh = boatMeshes[p.id];
+        if (!mesh) return;
+
+        let targetX = -3.8;
+        let targetY = 0.05;
+        let targetZ = -1.8 + idx * 0.95;
+
+        if (p.state === 'RUNNING') {
+          targetX = 0.2;
+          targetY = 0.58;
+          targetZ = 0;
+        } else if (p.state === 'READY') {
+          const qIndex = sim.readyQueue.indexOf(p.id);
+          targetX = -2.3;
+          targetY = 0.12;
+          targetZ = -1.3 + (qIndex >= 0 ? qIndex : idx) * 0.95;
+        } else if (p.state === 'DONE') {
+          targetX = 3.1;
+          targetY = 0.12;
+          targetZ = -1.3 + idx * 0.85;
+        } else {
+          // NEW (belum tiba sesuai Arrival Time)
+          targetX = -4.6;
+          targetY = 0.05;
+          targetZ = -1.8 + idx * 0.95;
+        }
+
+        // Interpolasi gerak mulus
+        mesh.position.x += (targetX - mesh.position.x) * 0.14;
+        mesh.position.y += (targetY - mesh.position.y) * 0.14;
+        mesh.position.z += (targetZ - mesh.position.z) * 0.14;
+
+        // Sesuaikan tinggi muatan berdasarkan sisa Burst Time
+        const cargo = mesh.children[1];
+        if (cargo) {
+          const ratio = Math.max(0.15, p.remaining / Math.max(1, p.burst));
+          cargo.scale.y += (ratio - cargo.scale.y) * 0.2;
+        }
+      });
+    }
+
+    // =========================================================================
+    // 5. KONTROL KAMERA & MODE XR (3D, VR 360°, AR KAMERA)
+    // =========================================================================
+    function updateCameraFromSpherical() {
+      camera.position.x = spherical.radius * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+      camera.position.y = spherical.radius * Math.cos(spherical.phi) + 1.2;
+      camera.position.z = spherical.radius * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+      camera.lookAt(0, 0.8, 0);
+    }
+
+    function setupPointerControls(dom) {
+      dom.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        prevPointer = { x: e.clientX, y: e.clientY };
+      });
+      window.addEventListener('pointerup', () => { isDragging = false; });
+      dom.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        prevPointer = { x: e.clientX, y: e.clientY };
+
+        spherical.theta -= dx * 0.008;
+        spherical.phi = Math.max(0.35, Math.min(1.45, spherical.phi - dy * 0.008));
+        updateCameraFromSpherical();
+      });
+      dom.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        spherical.radius = Math.max(5.0, Math.min(16.0, spherical.radius + e.deltaY * 0.005));
+        updateCameraFromSpherical();
+      }, { passive: false });
+    }
+
+    function updateHotspotPositions() {
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      HOTSPOTS.forEach((hs, idx) => {
+        const el = document.getElementById(`hs-${idx}`);
+        if (!el) return;
+        const vec = hs.pos3D.clone();
+        vec.project(camera);
+
+        if (vec.z > 1) {
+          el.style.display = 'none';
+        } else {
+          el.style.display = 'flex';
+          const x = (vec.x * 0.5 + 0.5) * width;
+          const y = (-(vec.y * 0.5) + 0.5) * height;
+          el.style.left = `${x}px`;
+          el.style.top = `${y}px`;
+        }
+      });
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvas-container');
+      if (!container || !renderer || !camera) return;
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    function toggleAutoRotate() {
+      autoRotate = !autoRotate;
+      document.getElementById('btn-rotate').textContent = autoRotate ? '🔄 Orbit: Aktif' : '⏸️ Orbit: Jeda';
+    }
+
+    function resetCamera() {
+      spherical = { radius: 9.8, theta: 0.58, phi: 1.05 };
+      updateCameraFromSpherical();
+      playTone(520, 0.08);
+    }
+
+    async function setXRMode(mode) {
+      currentXRMode = mode;
+      playTone(620, 0.09);
+
+      ['3d', 'vr', 'ar'].forEach((m) => {
+        const btn = document.getElementById(`mode-${m}`);
+        if (m === mode) {
+          btn.className = 'px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500 text-slate-950 shadow transition';
+        } else {
+          btn.className = 'px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
+        }
+      });
+
+      const vrOverlay = document.getElementById('vr-overlay');
+      const arVideo = document.getElementById('ar-video');
+      const arHint = document.getElementById('ar-placement-hint');
+      const xrBadge = document.getElementById('xr-badge');
+
+      if (mode !== 'ar' && arStream) {
+        arStream.getTracks().forEach(t => t.stop());
+        arStream = null;
+        arVideo.classList.add('hidden');
+        arHint.classList.add('hidden');
+      }
+
+      if (mode === '3d') {
+        vrOverlay.classList.add('hidden');
+        scene.background = new THREE.Color(0x070d19);
+        scene.fog = new THREE.FogExp2(0x070d19, 0.032);
+        xrBadge.textContent = 'MODE 3D • Dermaga CPU & Antrean Kelotok Lok Baintan';
+      } else if (mode === 'vr') {
+        vrOverlay.classList.remove('hidden');
+        scene.background = new THREE.Color(0x051520);
+        scene.fog = new THREE.FogExp2(0x051520, 0.024);
+        spherical.radius = 6.6;
+        updateCameraFromSpherical();
+        xrBadge.textContent = 'MODE VR 360° • Tur Imersif Ruang Prosesor';
+        showToast('Mode VR 360° aktif. Seret layar untuk mengamati antrean proses dari berbagai sudut.');
+      } else if (mode === 'ar') {
+        vrOverlay.classList.add('hidden');
+        scene.background = null;
+        scene.fog = null;
+        xrBadge.textContent = 'MODE AR KAMERA • Proyeksi Ruang CPU di Meja Belajar';
+        arHint.classList.remove('hidden');
+
+        try {
+          arStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+          arVideo.srcObject = arStream;
+          arVideo.classList.remove('hidden');
+          showToast('Kamera AR aktif! Ruang CPU 3D diproyeksikan di atas tampilan dunia nyata.');
+        } catch (err) {
+          scene.background = new THREE.Color(0x0f1c30);
+          showToast('Kamera tidak tersedia/diizinkan — menjalankan Mode AR Studio pada permukaan meja virtual.');
+        }
+      }
+    }
+
+    // =========================================================================
+    // 6. MESIN ALGORITMA PENJADWALAN CPU REAL-TIME (LANGKAH DEMI LANGKAH)
+    // =========================================================================
+    function initSimulationState() {
+      pauseSimulation();
+      sim.clock = 0;
+      sim.readyQueue = [];
+      sim.runningPid = null;
+      sim.rrCounter = 0;
+      sim.gantt = [];
+      sim.contextSwitches = 0;
+      sim.busyTime = 0;
+      sim.completedCount = 0;
+
+      sim.processes = processConfigs.map((cfg, idx) => ({
+        id: cfg.id,
+        colorIdx: idx % PROCESS_COLORS.length,
+        arrival: Math.max(0, parseInt(cfg.arrival, 10) || 0),
+        burst: Math.max(1, parseInt(cfg.burst, 10) || 1),
+        priority: Math.max(1, parseInt(cfg.priority, 10) || 1),
+        remaining: Math.max(1, parseInt(cfg.burst, 10) || 1),
+        state: 'NEW',
+        startTime: null,
+        finishTime: null,
+        waitingTime: 0,
+        turnaroundTime: 0,
+        responseTime: null
+      }));
+
+      rebuild3DProcessBoats();
+      renderProcessTable();
+      renderGanttAndMetrics();
+      updateHUD();
+    }
+
+    function stepSimulation() {
+      if (sim.completedCount >= sim.processes.length && sim.processes.length > 0) {
+        pauseSimulation();
+        showToast('Seluruh proses pada antrean telah selesai dieksekusi oleh CPU!');
+        return;
+      }
+
+      const algo = document.getElementById('algo-select').value;
+      const quantum = parseInt(document.getElementById('slider-quantum').value, 10);
+
+      // 1. Masukkan proses baru yang tiba pada clock saat ini ke Ready Queue
+      sim.processes.forEach(p => {
+        if (p.state === 'NEW' && p.arrival <= sim.clock) {
+          p.state = 'READY';
+          sim.readyQueue.push(p.id);
+        }
+      });
+
+      // 2. Cek apakah proses yang sedang berjalan perlu di-preempt (RR, SRTF, Priority Preemptive)
+      if (sim.runningPid) {
+        const curr = sim.processes.find(p => p.id === sim.runningPid);
+        let preempt = false;
+
+        if (algo === 'RR' && sim.rrCounter >= quantum && sim.readyQueue.length > 0) {
+          preempt = true;
+        } else if (algo === 'SRTF' && sim.readyQueue.length > 0) {
+          const minReady = Math.min(...sim.readyQueue.map(id => sim.processes.find(p => p.id === id).remaining));
+          if (minReady < curr.remaining) preempt = true;
+        } else if (algo === 'PRIORITY_P' && sim.readyQueue.length > 0) {
+          const highestPrio = Math.min(...sim.readyQueue.map(id => sim.processes.find(p => p.id === id).priority));
+          if (highestPrio < curr.priority) preempt = true;
+        }
+
+        if (preempt) {
+          curr.state = 'READY';
+          sim.readyQueue.push(curr.id);
+          sim.runningPid = null;
+          sim.rrCounter = 0;
+          sim.contextSwitches++;
+          playTone(340, 0.09, 'triangle');
+        }
+      }
+
+      // 3. Jika CPU Core kosong, pilih proses berikutnya dari Ready Queue sesuai algoritma
+      if (!sim.runningPid && sim.readyQueue.length > 0) {
+        let selectedIdx = 0;
+
+        if (algo === 'FCFS' || algo === 'RR') {
+          selectedIdx = 0;
+        } else if (algo === 'SJF') {
+          let bestBurst = Infinity;
+          sim.readyQueue.forEach((pid, idx) => {
+            const p = sim.processes.find(item => item.id === pid);
+            if (p.burst < bestBurst) {
+              bestBurst = p.burst;
+              selectedIdx = idx;
+            }
+          });
+        } else if (algo === 'SRTF') {
+          let bestRem = Infinity;
+          sim.readyQueue.forEach((pid, idx) => {
+            const p = sim.processes.find(item => item.id === pid);
+            if (p.remaining < bestRem) {
+              bestRem = p.remaining;
+              selectedIdx = idx;
+            }
+          });
+        } else if (algo === 'PRIORITY_NP' || algo === 'PRIORITY_P') {
+          let bestPrio = Infinity;
+          sim.readyQueue.forEach((pid, idx) => {
+            const p = sim.processes.find(item => item.id === pid);
+            if (p.priority < bestPrio) {
+              bestPrio = p.priority;
+              selectedIdx = idx;
+            }
+          });
+        }
+
+        const nextPid = sim.readyQueue.splice(selectedIdx, 1)[0];
+        const nextProc = sim.processes.find(p => p.id === nextPid);
+        if (sim.gantt.length > 0 && sim.gantt[sim.gantt.length - 1].pid !== nextPid && sim.gantt[sim.gantt.length - 1].pid !== 'IDLE') {
+          // Hitung context switch jika berganti dari proses sebelumnya yang belum selesai
+          const prevProc = sim.processes.find(p => p.id === sim.gantt[sim.gantt.length - 1].pid);
+          if (prevProc && prevProc.state !== 'DONE') {
+            sim.contextSwitches++;
+          }
+        }
+
+        nextProc.state = 'RUNNING';
+        if (nextProc.startTime === null) {
+          nextProc.startTime = sim.clock;
+          nextProc.responseTime = sim.clock - nextProc.arrival;
+        }
+        sim.runningPid = nextPid;
+        sim.rrCounter = 0;
+        playTone(540, 0.06, 'sine');
+      }
+
+      // 4. Eksekusi 1 ms pada CPU Core
+      if (sim.runningPid) {
+        const active = sim.processes.find(p => p.id === sim.runningPid);
+        appendGanttBlock(active.id, active.colorIdx, sim.clock, sim.clock + 1);
+        active.remaining -= 1;
+        sim.rrCounter += 1;
+        sim.busyTime += 1;
+
+        // Tambahkan waiting time untuk proses yang menunggu di Ready Queue
+        sim.readyQueue.forEach(pid => {
+          const waitingProc = sim.processes.find(p => p.id === pid);
+          if (waitingProc) waitingProc.waitingTime += 1;
+        });
+
+        sim.clock += 1;
+
+        // Cek apakah proses selesai pada akhir tick ini
+        if (active.remaining <= 0) {
+          active.remaining = 0;
+          active.state = 'DONE';
+          active.finishTime = sim.clock;
+          active.turnaroundTime = active.finishTime - active.arrival;
+          sim.runningPid = null;
+          sim.rrCounter = 0;
+          sim.completedCount += 1;
+          playTone(780, 0.12, 'sine');
+        }
+      } else {
+        // CPU IDLE
+        appendGanttBlock('IDLE', -1, sim.clock, sim.clock + 1);
+        sim.clock += 1;
+        playTone(260, 0.04, 'sine');
+      }
+
+      renderProcessTable();
+      renderGanttAndMetrics();
+      updateHUD();
+
+      if (sim.completedCount >= sim.processes.length) {
+        pauseSimulation();
+        showToast(`Simulasi ${algo} selesai pada t = ${sim.clock} ms!`);
+      }
+    }
+
+    function appendGanttBlock(pid, colorIdx, start, end) {
+      const last = sim.gantt[sim.gantt.length - 1];
+      if (last && last.pid === pid && last.end === start) {
+        last.end = end;
+      } else {
+        sim.gantt.push({ pid, colorIdx, start, end });
+      }
+    }
+
+    function togglePlaySimulation() {
+      if (sim.isPlaying) {
+        pauseSimulation();
+      } else {
+        if (sim.completedCount >= sim.processes.length) {
+          initSimulationState();
+        }
+        sim.isPlaying = true;
+        document.getElementById('btn-play').textContent = '⏸️ Jeda (Pause)';
+        document.getElementById('btn-play').className = 'flex-1 sm:flex-none px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950 shadow transition';
+        scheduleNextTick();
+      }
+    }
+
+    function scheduleNextTick() {
+      if (!sim.isPlaying) return;
+      const speed = parseFloat(document.getElementById('slider-speed').value) || 1;
+      const intervalMs = Math.round(750 / speed);
+      sim.timerId = setTimeout(() => {
+        stepSimulation();
+        if (sim.isPlaying) scheduleNextTick();
+      }, intervalMs);
+    }
+
+    function pauseSimulation() {
+      sim.isPlaying = false;
+      clearTimeout(sim.timerId);
+      const btn = document.getElementById('btn-play');
+      if (btn) {
+        btn.textContent = '▶️ Jalankan (Play)';
+        btn.className = 'flex-1 sm:flex-none px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow transition';
+      }
+    }
+
+    function resetSimulation() {
+      initSimulationState();
+      playTone(420, 0.08);
+    }
+
+    // =========================================================================
+    // 7. RENDERING UI TABEL PROSES, GANTT CHART & METRIK
+    // =========================================================================
+    function renderProcessTable() {
+      const tbody = document.getElementById('process-table-body');
+      tbody.innerHTML = '';
+
+      sim.processes.forEach((p, idx) => {
+        const color = PROCESS_COLORS[p.colorIdx];
+        const statusStyles = {
+          NEW: 'text-slate-400 bg-slate-800',
+          READY: 'text-amber-300 bg-amber-500/20',
+          RUNNING: 'text-emerald-300 bg-emerald-500/25 font-bold',
+          DONE: 'text-teal-300 bg-teal-500/20'
+        };
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-900/60';
+        tr.innerHTML = `
+          <td class="py-2 px-3">
+            <span class="inline-flex items-center gap-1.5 font-bold text-white">
+              <span class="w-2.5 h-2.5 rounded-full" style="background:${color.hex}"></span>
+              ${p.id}
+            </span>
+          </td>
+          <td class="py-1.5 px-2">
+            <input type="number" min="0" max="30" value="${processConfigs[idx].arrival}" onchange="updateProcessField(${idx}, 'arrival', this.value)" class="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs text-white" />
+          </td>
+          <td class="py-1.5 px-2">
+            <input type="number" min="1" max="20" value="${processConfigs[idx].burst}" onchange="updateProcessField(${idx}, 'burst', this.value)" class="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs text-white" />
+          </td>
+          <td class="py-1.5 px-2">
+            <input type="number" min="1" max="10" value="${processConfigs[idx].priority}" onchange="updateProcessField(${idx}, 'priority', this.value)" class="w-14 bg-slate-900 border border-slate-700 rounded px-1.5 py-1 text-xs text-white" />
+          </td>
+          <td class="py-2 px-2 text-slate-200">${p.remaining} ms</td>
+          <td class="py-2 px-2">
+            <span class="px-2 py-0.5 rounded text-[10px] ${statusStyles[p.state]}">${p.state}</span>
+          </td>
+          <td class="py-2 px-2 text-center">
+            <button onclick="removeProcessRow(${idx})" class="text-slate-500 hover:text-rose-400 text-xs" title="Hapus Proses">✕</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateProcessField(idx, field, val) {
+      const parsed = parseInt(val, 10);
+      if (field === 'arrival') processConfigs[idx].arrival = Math.max(0, isNaN(parsed) ? 0 : parsed);
+      if (field === 'burst') processConfigs[idx].burst = Math.max(1, isNaN(parsed) ? 1 : parsed);
+      if (field === 'priority') processConfigs[idx].priority = Math.max(1, isNaN(parsed) ? 1 : parsed);
+      initSimulationState();
+    }
+
+    function addProcessRow() {
+      if (processConfigs.length >= 6) {
+        showToast('Maksimal 6 proses agar visualisasi 3D dermaga tetap optimal.');
+        return;
+      }
+      const nextNum = processConfigs.length + 1;
+      processConfigs.push({
+        id: `P${nextNum}`,
+        arrival: nextNum - 1,
+        burst: Math.floor(Math.random() * 5) + 2,
+        priority: Math.floor(Math.random() * 4) + 1
+      });
+      initSimulationState();
+    }
+
+    function removeProcessRow(idx) {
+      if (processConfigs.length <= 2) {
+        showToast('Minimal harus terdapat 2 proses dalam antrean.');
+        return;
+      }
+      processConfigs.splice(idx, 1);
+      processConfigs.forEach((p, i) => { p.id = `P${i + 1}`; });
+      initSimulationState();
+    }
+
+    function randomizeProcesses() {
+      processConfigs.forEach((p, i) => {
+        p.arrival = i === 0 ? 0 : Math.floor(Math.random() * 5);
+        p.burst = Math.floor(Math.random() * 6) + 2;
+        p.priority = Math.floor(Math.random() * 5) + 1;
+      });
+      initSimulationState();
+      showToast('Data Arrival Time, Burst Time, dan Priority proses berhasil diacak.');
+    }
+
+    function renderGanttAndMetrics() {
+      const container = document.getElementById('gantt-container');
+      const timeline = document.getElementById('gantt-timeline');
+      document.getElementById('context-switch-badge').textContent = `Context Switches: ${sim.contextSwitches}`;
+
+      if (sim.gantt.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-500 flex items-center justify-center w-full py-2">Tekan "Jalankan (Play)" atau "Langkah (+1 ms)" untuk memulai simulasi penjadwalan CPU.</div>`;
+        timeline.innerHTML = '';
+      } else {
+        container.innerHTML = '';
+        sim.gantt.forEach(block => {
+          const duration = block.end - block.start;
+          const div = document.createElement('div');
+          const bgStyle = block.pid === 'IDLE'
+            ? 'bg-slate-800 text-slate-400 border border-slate-700'
+            : `${PROCESS_COLORS[block.colorIdx].badge} font-bold shadow`;
+          div.style.flexGrow = duration;
+          div.style.minWidth = `${Math.max(28, duration * 22)}px`;
+          div.className = `${bgStyle} rounded-lg px-1.5 py-1 flex flex-col items-center justify-center font-mono-code text-[11px]`;
+          div.innerHTML = `<span>${block.pid}</span><span class="text-[9px] opacity-80">${block.start}-${block.end}</span>`;
+          container.appendChild(div);
+        });
+        timeline.innerHTML = `<span>0 ms</span><span>Total Waktu: ${sim.clock} ms</span>`;
+      }
+
+      // Hitung Metrik Kinerja
+      const n = sim.processes.length;
+      const totalWT = sim.processes.reduce((acc, p) => acc + p.waitingTime, 0);
+      const finishedProcs = sim.processes.filter(p => p.turnaroundTime > 0);
+      const totalTAT = finishedProcs.reduce((acc, p) => acc + p.turnaroundTime, 0);
+      const respondedProcs = sim.processes.filter(p => p.responseTime !== null);
+      const totalRT = respondedProcs.reduce((acc, p) => acc + p.responseTime, 0);
+
+      const awt = n > 0 ? (totalWT / n).toFixed(2) : '0.00';
+      const atat = finishedProcs.length > 0 ? (totalTAT / finishedProcs.length).toFixed(2) : '0.00';
+      const art = respondedProcs.length > 0 ? (totalRT / respondedProcs.length).toFixed(2) : '0.00';
+      const util = sim.clock > 0 ? ((sim.busyTime / sim.clock) * 100).toFixed(1) : '0.0';
+
+      document.getElementById('metric-awt').textContent = `${awt} ms`;
+      document.getElementById('metric-atat').textContent = `${atat} ms`;
+      document.getElementById('metric-art').textContent = `${art} ms`;
+      document.getElementById('metric-util').textContent = `${util}%`;
+    }
+
+    function updateHUD() {
+      document.getElementById('hud-clock').textContent = `${sim.clock} ms`;
+      document.getElementById('hud-running').textContent = sim.runningPid || 'IDLE';
+    }
+
+    function onAlgorithmChange() {
+      const algo = document.getElementById('algo-select').value;
+      const qBox = document.getElementById('quantum-control-box');
+      qBox.style.opacity = algo === 'RR' ? '1' : '0.45';
+      initSimulationState();
+    }
+
+    function updateQuantumLabel() {
+      const q = document.getElementById('slider-quantum').value;
+      document.getElementById('val-quantum').textContent = `${q} ms`;
+      if (document.getElementById('algo-select').value === 'RR') {
+        initSimulationState();
+      }
+    }
+
+    function updateSpeedLabel() {
+      const s = parseFloat(document.getElementById('slider-speed').value).toFixed(1);
+      document.getElementById('val-speed').textContent = `${s}x`;
+    }
+
+    // =========================================================================
+    // 8. HOTSPOT & TAB PEDAGOGIS
+    // =========================================================================
+    function selectHotspot(index, withSound = true) {
+      currentHotspot = index;
+      const data = HOTSPOTS[index];
+      if (withSound) playTone(560, 0.08);
+
+      document.getElementById('hs-category').textContent = data.category;
+      document.getElementById('hs-title').textContent = data.title;
+      document.getElementById('hs-science').textContent = data.science;
+      document.getElementById('hs-culture').textContent = data.culture;
+      document.getElementById('hs-prompt').textContent = data.prompt;
+
+      switchRightTab('bedah');
+    }
+
+    function switchRightTab(tabName) {
+      ['bedah', 'tutor', 'hots'].forEach((t) => {
+        const panel = document.getElementById(`tab-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tabName) {
+          panel.classList.remove('hidden');
+          btn.className = 'py-2 px-2 rounded-xl text-xs font-semibold bg-amber-500 text-slate-950 transition';
+        } else {
+          panel.classList.add('hidden');
+          btn.className = 'py-2 px-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition';
+        }
+      });
+    }
+
+    // =========================================================================
+    // 9. INTEGRASI GENERATIVE AI (GEMINI API) DENGAN EXPONENTIAL BACKOFF
+    // =========================================================================
+    async function callGeminiAPI(userPrompt, systemPrompt) {
+      const apiKey = ""; // Disediakan otomatis oleh runtime Canvas
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const payload = {
+        contents: [{ parts: [{ text: userPrompt }] }],
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        }
+      };
+
+      const delays = [1000, 2000, 4000];
+      for (let attempt = 0; attempt <= delays.length; attempt++) {
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          const result = await response.json();
+          const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text.trim();
+          throw new Error('Respons kosong');
+        } catch (err) {
+          if (attempt < delays.length) {
+            await new Promise(res => setTimeout(res, delays[attempt]));
+          } else {
+            return generateLocalOSFallback(userPrompt);
+          }
+        }
+      }
+    }
+
+    function generateLocalOSFallback() {
+      const algo = document.getElementById('algo-select').value;
+      const awt = document.getElementById('metric-awt').textContent;
+      const atat = document.getElementById('metric-atat').textContent;
+      const util = document.getElementById('metric-util').textContent;
+
+      return `Analisis Kontekstual Simulasi (${algo} pada t = ${sim.clock} ms):\n` +
+        `• Metrik Saat Ini: AWT = ${awt}, ATAT = ${atat}, CPU Utilization = ${util}, Context Switches = ${sim.contextSwitches}.\n` +
+        `• Prinsip Sistem Operasi: Algoritma ${algo} mengatur urutan PCB dari Ready Queue menuju CPU Core. Pada Round Robin, ukuran Time Quantum menentukan keseimbangan antara Response Time yang cepat dan overhead Context Switch.\n` +
+        `• Analogi Lok Baintan: Seperti pengaturan giliran perahu kelotok bermuatan kecil dan besar di dermaga Sungai Martapura agar seluruh transaksi berjalan adil tanpa penumpukan antrean.`;
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function appendChatMessage(sender, text, isUser = false) {
+      const box = document.getElementById('chat-messages');
+      const div = document.createElement('div');
+      div.className = isUser
+        ? 'bg-amber-950/50 border border-amber-600/40 p-3 rounded-xl text-xs text-white ml-6 leading-relaxed'
+        : 'bg-slate-900/90 border border-slate-800 p-3 rounded-xl text-xs text-slate-200 mr-4 leading-relaxed whitespace-pre-line';
+      div.innerHTML = `<span class="font-semibold ${isUser ? 'text-amber-300' : 'text-teal-400'} block mb-1">${sender}:</span>${escapeHTML(text)}`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function handleChatSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-input');
+      const query = input.value.trim();
+      if (!query) return;
+
+      input.value = '';
+      appendChatMessage('Mahasiswa', query, true);
+      playTone(500, 0.07);
+
+      const btn = document.getElementById('btn-send-chat');
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      const algo = document.getElementById('algo-select').value;
+      const quantum = document.getElementById('slider-quantum').value;
+      const procSummary = sim.processes.map(p => `${p.id}(AT=${p.arrival},BT=${p.burst},Prio=${p.priority},WT=${p.waitingTime},State=${p.state})`).join(', ');
+
+      const sysPrompt = `Anda adalah "Kai Banjar", asisten dosen mata kuliah Sistem Operasi yang ahli dalam penjadwalan CPU (CPU Scheduling) sekaligus mengintegrasikan metafora kearifan lokal keteraturan antrean perahu kelotok di Pasar Terapung Lok Baintan, Kalimantan Selatan.
+Konteks simulasi pengguna saat ini:
+- Algoritma aktif: ${algo} (Time Quantum = ${quantum} ms)
+- Clock saat ini: ${sim.clock} ms, Context Switches: ${sim.contextSwitches}
+- Metrik: AWT = ${document.getElementById('metric-awt').textContent}, ATAT = ${document.getElementById('metric-atat').textContent}, ART = ${document.getElementById('metric-art').textContent}, CPU Utilization = ${document.getElementById('metric-util').textContent}
+- Data proses: ${procSummary}
+Berikan penjelasan akademis yang akurat, terstruktur ringkas (maksimal 3 paragraf pendek) dalam Bahasa Indonesia, dan akhiri dengan 1 pertanyaan pemantik berpikir kritis.`;
+
+      const reply = await callGeminiAPI(query, sysPrompt);
+      appendChatMessage('Kai Banjar (Asisten OS)', reply, false);
+
+      btn.disabled = false;
+      btn.textContent = 'Kirim';
+    }
+
+    function quickAsk(question) {
+      document.getElementById('chat-input').value = question;
+      handleChatSubmit(new Event('submit'));
+    }
+
+    function askTutorAboutCurrentHotspot() {
+      const hs = HOTSPOTS[currentHotspot];
+      switchRightTab('tutor');
+      quickAsk(`Jelaskan secara mendalam konsep Sistem Operasi pada "${hs.title}" beserta analogi antrean kelotok Lok Baintan dan hubungannya dengan simulasi saya saat ini!`);
+    }
+
+    async function generateHOTSCase() {
+      const btn = document.getElementById('btn-gen-case');
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyusun...';
+
+      const sysPrompt = "Buatlah 1 studi kasus soal HOTS (tingkat Analisis C4 dan Sintesis C6) mata kuliah Sistem Operasi topik Penjadwalan CPU dalam Bahasa Indonesia, lengkap dengan 4 proses (P1-P4 beserta Arrival Time, Burst Time, dan Priority), yang menguji pemahaman Convoy Effect, Starvation, atau pemilihan Time Quantum. Maksimal 5 kalimat.";
+      const newCase = await callGeminiAPI("Buatkan studi kasus HOTS penjadwalan CPU baru.", sysPrompt);
+
+      document.getElementById('hots-question').textContent = newCase;
+      document.getElementById('hots-answer').value = '';
+      document.getElementById('hots-feedback-box').classList.add('hidden');
+
+      btn.disabled = false;
+      btn.textContent = '🔄 Kasus Baru (AI)';
+      playTone(620, 0.08);
+    }
+
+    async function evaluateHOTSAnswer() {
+      const question = document.getElementById('hots-question').textContent;
+      const answer = document.getElementById('hots-answer').value.trim();
+
+      if (answer.length < 15) {
+        showToast('Tuliskan analisis dan rancangan solusi penjadwalan Anda terlebih dahulu.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-eval-hots');
+      btn.disabled = true;
+      btn.textContent = '⏳ Menilai Berdasarkan Rubrik...';
+
+      const sysPrompt = `Anda adalah dosen pengampu mata kuliah Sistem Operasi. Evaluasi jawaban HOTS mahasiswa dalam Bahasa Indonesia secara objektif dan konstruktif dengan format:
+1. Skor Indikatif (0–100) & Level Kognitif (C4 Analisis / C5 Evaluasi / C6 Sintesis)
+2. Ketepatan Pemilihan Algoritma, Time Quantum, dan Penanganan Starvation/Convoy Effect
+3. Saran Penyempurnaan Argumen`;
+
+      const feedback = await callGeminiAPI(`Studi Kasus: ${question}\n\nJawaban Mahasiswa: ${answer}`, sysPrompt);
+
+      document.getElementById('hots-feedback-text').textContent = feedback;
+      document.getElementById('hots-feedback-box').classList.remove('hidden');
+
+      btn.disabled = false;
+      btn.textContent = '🎯 Nilai Jawaban Berdasarkan Rubrik HOTS (AI)';
+      playTone(680, 0.1);
+    }
+
+    // =========================================================================
+    // 10. MODAL & PENYUSUNAN DRAF LAPORAN ANALISIS PDF
+    // =========================================================================
+    function openModal(id) {
+      if (id === 'modal-report') {
+        populateReportDraft();
+      }
+      document.getElementById(id).classList.remove('hidden');
+      playTone(540, 0.07);
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function populateReportDraft() {
+      const algo = document.getElementById('algo-select').value;
+      const awt = document.getElementById('metric-awt').textContent;
+      const atat = document.getElementById('metric-atat').textContent;
+
+      const draft = `LAPORAN ANALISIS SINGKAT — MEDIA PEMBELAJARAN INTERAKTIF AR/VR & GENAI
+Mata Kuliah: Sistem Operasi
+Topik Materi: Penjadwalan CPU (CPU Scheduling)
+Nama Prototipe: BanjarOS XR — Simulasi Penjadwalan CPU Berbasis AR/VR & GenAI
+
+1. JUSTIFIKASI PEMILIHAN MEDIA (AR/VR & GENERATIVE AI)
+Topik Penjadwalan CPU melibatkan konsep abstrak dan dinamis seperti transisi state proses (New, Ready, Running, Terminated), mekanisme preemption, overhead Context Switch, serta fenomena Convoy Effect dan Starvation. Diagram statis di papan tulis sering menyulitkan mahasiswa membayangkan bagaimana banyak proses bersaing memperebutkan waktu CPU secara bersamaan.
+Integrasi 3D/VR 360° dan Kamera AR memungkinkan mahasiswa memvisualisasikan antrean Process Control Block (PCB) secara spasial di atas meja belajar, sedangkan Generative AI (Gemini API) berperan sebagai tutor kognitif adaptif yang menganalisis metrik simulasi mahasiswa (AWT, ATAT, ART, CPU Utilization) secara real-time.
+
+2. INTEGRASI KEARIFAN LOKAL KALIMANTAN SELATAN
+Media ini mengangkat kearifan lokal keteraturan antrean perahu kelotok di Pasar Terapung Lok Baintan, Sungai Martapura, bukan sekadar hiasan visual, melainkan inti metafora interaksi:
+- Perahu Kelotok merepresentasikan Process Control Block (PCB) dengan volume muatan sebagai Burst Time.
+- Dermaga utama merepresentasikan CPU Core, sedangkan barisan kelotok yang menambat teratur merepresentasikan Ready Queue.
+- Prinsip keadilan sosial Banjar ("Baiman, Bauntung, Batuah") memotivasi pemahaman mekanisme Time Quantum (pembagian giliran transaksi yang adil) dan Aging (mencegah perahu yang lama menunggu mengalami starvation).
+
+3. MEKANISME INTERAKSI DAN PENGGUNAAN GENAI
+- Eksplorasi Spasial & Hotspot (1–4): Mahasiswa memutar ruang CPU 3D, beralih ke Mode VR 360° atau Kamera AR, dan membedah 4 titik konsep kunci.
+- Laboratorium Variabel Real-Time: Mahasiswa mengubah Arrival Time, Burst Time, Priority, algoritma (FCFS, SJF, SRTF, Priority, Round Robin), serta Time Quantum, lalu mengamati pergerakan perahu proses masuk ke CPU Core dan pembentukan Gantt Chart (Contoh hasil uji ${algo}: AWT = ${awt}, ATAT = ${atat}).
+- Tutor & Evaluasi HOTS GenAI: Mahasiswa berdiskusi dengan Asisten OS ("Kai Banjar") dan menyelesaikan studi kasus tingkat Analisis–Sintesis (C4–C6) dengan penilaian rubrik otomatis.`;
+
+      document.getElementById('report-draft-text').value = draft;
+    }
+
+    function copyReportDraft() {
+      const textarea = document.getElementById('report-draft-text');
+      textarea.select();
+      document.execCommand('copy');
+      playTone(660, 0.09);
+      showToast('Draf laporan analisis berhasil disalin ke clipboard untuk ditempel ke dokumen PDF Anda!');
+    }
+
+    function showToast(msg) {
+      const box = document.getElementById('toast-box');
+      document.getElementById('toast-message').textContent = msg;
+      box.classList.remove('hidden');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        box.classList.add('hidden');
+      }, 4200);
+    }
+
+    // =========================================================================
+    // 11. ANIMATION LOOP UTAMA
+    // =========================================================================
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (autoRotate && !isDragging) {
+        spherical.theta += 0.0022;
+        updateCameraFromSpherical();
+      }
+
+      // Animasi rotasi CPU Core & Cincin Time Quantum
+      if (cpuCoreMesh && coreRingMesh) {
+        const isBusy = Boolean(sim.runningPid);
+        cpuCoreMesh.rotation.y += isBusy ? 0.04 : 0.01;
+        coreRingMesh.rotation.z += isBusy ? 0.03 : 0.008;
+        cpuCoreMesh.material.emissiveIntensity = isBusy ? 0.85 : 0.3;
+      }
+
+      update3DBoatTargets();
+      updateHotspotPositions();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function () {
+      init3D();
+      initSimulationState();
+      selectHotspot(0, false);
+      animate();
+    };
+  </script>
+</body>
+</html>
