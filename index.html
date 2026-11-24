@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BantaranOS AR/VR — Media Pembelajaran Sistem Operasi & GenAI</title>
+  <style>
+    :root {
+      --bg: #0b1320;
+      --panel: #132035;
+      --panel-2: #192b47;
+      --accent: #22d3ee;
+      --accent-2: #34d399;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #283c5c;
+    }
+    * { box-sizing: border-box; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
+    body {
+      margin: 0;
+      background: linear-gradient(160deg, #080e18 0%, var(--bg) 55%, #0f1d33 100%);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: rgba(19, 32, 53, 0.92);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand h1 { margin: 0; font-size: 1.15rem; color: var(--accent); }
+    .brand p { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); }
+    .top-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .pill {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+    }
+    .pill strong { color: var(--accent-2); }
+
+    .container {
+      max-width: 1220px;
+      margin: 20px auto;
+      padding: 0 18px 40px;
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 920px) {
+      .container { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+      color: var(--accent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sub { font-size: 0.86rem; color: var(--muted); margin-bottom: 12px; }
+
+    .mode-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .tab-btn {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #06101c;
+      border-color: var(--accent);
+    }
+
+    /* 3D/AR/VR Stage */
+    .stage {
+      position: relative;
+      background: radial-gradient(circle at 25% 20%, rgba(34, 211, 238, 0.14), transparent 55%),
+                  radial-gradient(circle at 80% 75%, rgba(52, 211, 153, 0.12), transparent 55%),
+                  #09111e;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 295px;
+      overflow: hidden;
+    }
+    .stage.ar-mode {
+      border-style: dashed;
+      border-color: var(--accent-2);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 182, 212, 0.08)), #0a1422;
+    }
+    .stage-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: rgba(34, 211, 238, 0.16);
+      color: var(--accent);
+      border: 1px solid rgba(34, 211, 238, 0.35);
+      margin-bottom: 10px;
+    }
+    .cube-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+    @media (max-width: 600px) {
+      .cube-grid { grid-template-columns: 1fr; }
+    }
+    .os-node {
+      background: rgba(25, 43, 71, 0.85);
+      border: 1px solid #35507a;
+      border-radius: 10px;
+      padding: 12px;
+      transform: perspective(600px) rotateX(4deg);
+      transition: transform 0.25s, border-color 0.25s;
+    }
+    .os-node:hover {
+      transform: perspective(600px) rotateX(0deg) translateY(-2px);
+      border-color: var(--accent);
+    }
+    .os-node h3 { margin: 0 0 6px; font-size: 0.92rem; color: var(--accent-2); }
+    .os-node p { margin: 0; font-size: 0.8rem; color: var(--text); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .metric-box {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px;
+      text-align: center;
+    }
+    .metric-box .val { font-size: 1.15rem; font-weight: 700; color: var(--accent); }
+    .metric-box .lbl { font-size: 0.74rem; color: var(--muted); }
+
+    /* Interactive Points */
+    .step-box {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .step-box.done { border-color: var(--accent-2); }
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .status-tag {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(251, 191, 36, 0.15);
+      color: var(--warn);
+    }
+    .status-tag.ok {
+      background: rgba(52, 211, 153, 0.18);
+      color: var(--accent-2);
+    }
+    label { display: block; font-size: 0.82rem; color: var(--muted); margin-top: 8px; }
+    input[type="range"], select {
+      width: 100%;
+      margin-top: 4px;
+      accent-color: var(--accent);
+    }
+    select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 7px 10px;
+      border-radius: 7px;
+    }
+    .btn {
+      margin-top: 10px;
+      background: var(--accent-2);
+      color: #051612;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.84rem;
+      cursor: pointer;
+    }
+    .btn.secondary {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--accent);
+    }
+
+    /* GenAI Box */
+    .ai-output {
+      background: #09111e;
+      border: 1px solid #2b456b;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.85rem;
+      white-space: pre-line;
+      margin-top: 10px;
+      max-height: 310px;
+      overflow-y: auto;
+    }
+    .local-note {
+      background: rgba(251, 191, 36, 0.08);
+      border-left: 3px solid var(--warn);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: #fde68a;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>BantaranOS AR/VR + GenAI</h1>
+      <p>Sistem Operasi: Penjadwalan CPU, Manajemen Frame Memori &amp; Pencegahan Deadlock (Analogi Tata Air Beje/Kanal Lahan Basah)</p>
+    </div>
+    <div class="top-meta">
+      <div class="pill">Target Durasi: <strong>15–20 Menit</strong></div>
+      <div class="pill">Waktu Sesi: <strong id="timerDisplay">00:00</strong></div>
+      <div class="pill">Interaksi Selesai: <strong id="doneCount">0 / 3</strong></div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Kolom Kiri: Visualisasi AR/VR & 3 Titik Interaksi Aktif -->
+    <div>
+      <div class="card">
+        <h2>
+          <span>Ruang Visualisasi Interaktif</span>
+          <span id="modeLabel" style="font-size:0.78rem; color:var(--accent-2);">Mode VR 3D</span>
+        </h2>
+        <p class="sub">
+          Beralih antara tampilan <strong>VR 3D</strong> (eksplorasi ruang kernel &amp; aliran antrean) dan <strong>AR Overlay</strong> (manipulasi objek 3D di ruang kerja dengan analogi pintu/kanal air lahan basah).
+        </p>
+
+        <div class="mode-tabs">
+          <button class="tab-btn active" id="btnVR" onclick="setMode('VR')">VR 3D Kernel Room</button>
+          <button class="tab-btn" id="btnAR" onclick="setMode('AR')">AR Module Overlay</button>
+        </div>
+
+        <div class="stage" id="stageBox">
+          <span class="stage-badge" id="stageBadge">VR 3D • Analogi Kanal &amp; Pintu Air Lahan Basah</span>
+          <div class="cube-grid">
+            <div class="os-node">
+              <h3>1. CPU Scheduler (Kanal Utama)</h3>
+              <p id="cpuVis">Time Quantum: <b>4 ms</b> • Kebijakan: <b>Round Robin</b><br/>Analogi: Durasi buka pintu air per petak agar semua kebagian sebelum kering.</p>
+            </div>
+            <div class="os-node">
+              <h3>2. Memory Frames (Kolam/Beje)</h3>
+              <p id="memVis">Frame Aktif: <b>4 / 6</b> • Strategi: <b>LRU</b><br/>Analogi: Menjaga cadangan air pada beje paling relevan agar tidak sering menguras/ganti (thrashing).</p>
+            </div>
+            <div class="os-node">
+              <h3>3. Resource Lock (Jalur Air)</h3>
+              <p id="lockVis">Status: <b>Terpantau</b> • Pencegahan: <b>Urutan Lock Tetap</b><br/>Analogi: Aturan arah aliran satu arah mencegah dua pintu saling mengunci jalur air (deadlock).</p>
+            </div>
+          </div>
+
+          <div class="metrics">
+            <div class="metric-box">
+              <div class="val" id="mWait">6.2 ms</div>
+              <div class="lbl">Est. Avg Waiting Time</div>
+            </div>
+            <div class="metric-box">
+              <div class="val" id="mFault">18%</div>
+              <div class="lbl">Est. Page Fault Rate</div>
+            </div>
+            <div class="metric-box">
+              <div class="val" id="mDeadlock" style="color:var(--accent-2);">Aman</div>
+              <div class="lbl">Status Deadlock / Starvation</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="local-note">
+          <strong>Integrasi Kearifan Lokal dalam Mekanisme:</strong> Pengaturan <em>time quantum</em>, alokasi <em>frame</em>, dan urutan <em>lock</em> dikaitkan langsung dengan prinsip tata air lahan basah (keseimbangan giliran aliran, penyimpanan cadangan di <em>beje</em>, dan pencegahan sumbatan jalur) sehingga memengaruhi keputusan simulasi, bukan sekadar catatan teks.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>3 Titik Interaksi Aktif (Keputusan &amp; Manipulasi Mahasiswa)</h2>
+
+        <!-- Titik Interaksi 1 -->
+        <div class="step-box" id="box1">
+          <div class="step-header">
+            <span>Titik Interaksi 1: Manipulasi Time Quantum &amp; Giliran Kanal</span>
+            <span class="status-tag" id="tag1">Belum Dikonfirmasi</span>
+          </div>
+          <label for="quantumSlider">Atur Time Quantum (1 ms – 10 ms): <strong id="quantumVal">4 ms</strong></label>
+          <input type="range" id="quantumSlider" min="1" max="10" value="4" oninput="updateSim()" />
+          <label for="schedSelect">Pilih Kebijakan Penjadwalan:</label>
+          <select id="schedSelect" onchange="updateSim()">
+            <option value="RR" selected>Round Robin (Giliran Merata / Tata Air Bergilir)</option>
+            <option value="SJF">Shortest Job First (Prioritas Durasi Terpendek)</option>
+            <option value="PRIO">Priority Aging (Prioritas dengan Penuaan / Anti-Starvation)</option>
+          </select>
+          <button class="btn" onclick="confirmStep(1)">Terapkan &amp; Kunci Keputusan 1</button>
+        </div>
+
+        <!-- Titik Interaksi 2 -->
+        <div class="step-box" id="box2">
+          <div class="step-header">
+            <span>Titik Interaksi 2: Alokasi Frame Memori &amp; Strategi Penggantian</span>
+            <span class="status-tag" id="tag2">Belum Dikonfirmasi</span>
+          </div>
+          <label for="frameSlider">Jumlah Frame Memori Tersedia (2 – 8 Frame): <strong id="frameVal">4 Frame</strong></label>
+          <input type="range" id="frameSlider" min="2" max="8" value="4" oninput="updateSim()" />
+          <label for="pageSelect">Strategi Page Replacement:</label>
+          <select id="pageSelect" onchange="updateSim()">
+            <option value="LRU" selected>LRU (Least Recently Used — Paling Lama Tak Dipakai)</option>
+            <option value="FIFO">FIFO (First-In, First-Out — Antrean Masuk)</option>
+            <option value="OPT">Optimal / Working-Set Guard</option>
+          </select>
+          <button class="btn" onclick="confirmStep(2)">Terapkan &amp; Kunci Keputusan 2</button>
+        </div>
+
+        <!-- Titik Interaksi 3 -->
+        <div class="step-box" id="box3">
+          <div class="step-header">
+            <span>Titik Interaksi 3: Keputusan Pencegahan Deadlock (Circular Wait)</span>
+            <span class="status-tag" id="tag3">Belum Dikonfirmasi</span>
+          </div>
+          <label for="lockSelect">Pilih Mekanisme Pengendalian Sumber Daya / Lock:</label>
+          <select id="lockSelect" onchange="updateSim()">
+            <option value="ORDER" selected>Ordered Resource Allocation (Pengurutan Lock Tetap)</option>
+            <option value="PREEMPT">Preemptive Release (Pelepasan Terkendali Saat Menunggu)</option>
+            <option value="NONE">Tanpa Aturan Urutan (Risiko Circular Wait)</option>
+          </select>
+          <button class="btn" onclick="confirmStep(3)">Terapkan &amp; Kunci Keputusan 3</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kolom Kanan: Generative AI Fungsional (Generator Variasi Latihan & Evaluator) -->
+    <div>
+      <div class="card">
+        <h2>Modul Generative AI (Latihan Adaptif &amp; Analisis)</h2>
+        <p class="sub">
+          GenAI menghasilkan <strong>variasi latihan/skenario baru secara otomatis</strong> berdasarkan konfigurasi Anda serta mengevaluasi keputusan pada 3 titik interaksi.
+        </p>
+
+        <button class="btn" onclick="generateAiCaseAndFeedback()">
+          Hasilkan Variasi Latihan &amp; Evaluasi Keputusan (GenAI)
+        </button>
+        <button class="btn secondary" onclick="injectRandomWorkload()">
+          Acak Beban Proses Baru
+        </button>
+
+        <div class="ai-output" id="aiOutput">Menunggu interaksi... Sesuaikan parameter pada 3 titik interaksi di sebelah kiri lalu klik "Hasilkan Variasi Latihan &amp; Evaluasi Keputusan (GenAI)" untuk mendapatkan variasi kasus baru, diagnosis miskonsepsi, dan pertanyaan analisis.</div>
+      </div>
+
+      <div class="card">
+        <h2>Alur Belajar Mandiri (15–20 Menit)</h2>
+        <p class="sub" style="margin-bottom:0;">
+          <strong>0–4 mnt:</strong> Eksplorasi VR 3D &amp; analogi tata air.<br/>
+          <strong>4–13 mnt:</strong> Uji 3 titik interaksi di mode VR/AR.<br/>
+          <strong>13–20 mnt:</strong> Kerjakan variasi latihan dari GenAI &amp; bandingkan metrik sebelum/sesudah perubahan.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let seconds = 0;
+    const confirmed = { 1: false, 2: false, 3: false };
+    let workloadSeed = 1;
+
+    setInterval(() => {
+      seconds++;
+      const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const s = String(seconds % 60).padStart(2, "0");
+      document.getElementById("timerDisplay").textContent = `${m}:${s}`;
+    }, 1000);
+
+    function setMode(mode) {
+      const stage = document.getElementById("stageBox");
+      const btnVR = document.getElementById("btnVR");
+      const btnAR = document.getElementById("btnAR");
+      const label = document.getElementById("modeLabel");
+      const badge = document.getElementById("stageBadge");
+
+      if (mode === "AR") {
+        stage.classList.add("ar-mode");
+        btnAR.classList.add("active");
+        btnVR.classList.remove("active");
+        label.textContent = "Mode AR Overlay";
+        badge.textContent = "AR Smartphone/Web Overlay • Manipulasi Objek 3D Sistem Operasi";
+      } else {
+        stage.classList.remove("ar-mode");
+        btnVR.classList.add("active");
+        btnAR.classList.remove("active");
+        label.textContent = "Mode VR 3D";
+        badge.textContent = "VR 3D • Analogi Kanal & Pintu Air Lahan Basah";
+      }
+    }
+
+    function updateSim() {
+      const q = parseInt(document.getElementById("quantumSlider").value, 10);
+      const f = parseInt(document.getElementById("frameSlider").value, 10);
+      const sched = document.getElementById("schedSelect").value;
+      const page = document.getElementById("pageSelect").value;
+      const lock = document.getElementById("lockSelect").value;
+
+      document.getElementById("quantumVal").textContent = `${q} ms`;
+      document.getElementById("frameVal").textContent = `${f} Frame`;
+
+      const schedName = sched === "RR" ? "Round Robin" : sched === "SJF" ? "SJF" : "Priority Aging";
+      document.getElementById("cpuVis").innerHTML =
+        `Time Quantum: <b>${q} ms</b> • Kebijakan: <b>${schedName}</b><br/>Beban proses set #${workloadSeed} aktif di antrean ready.`;
+
+      document.getElementById("memVis").innerHTML =
+        `Frame Aktif: <b>${f} / 8</b> • Strategi: <b>${page}</b><br/>Menjaga working-set proses agar tidak memicu thrashing.`;
+
+      const lockName = lock === "ORDER" ? "Urutan Lock Tetap" : lock === "PREEMPT" ? "Preemptive Release" : "Tanpa Urutan Lock";
+      document.getElementById("lockVis").innerHTML =
+        `Status: <b>${lock === "NONE" ? "Berisiko Deadlock" : "Terkendali"}</b> • Aturan: <b>${lockName}</b><br/>Mengatur akses mutual exclusion sumber daya.`;
+
+      let wait = (11 - q) * 0.75 + (sched === "SJF" ? -1.4 : sched === "PRIO" ? -0.5 : 0.4) + (workloadSeed * 0.35);
+      wait = Math.max(2.1, Number(wait.toFixed(1)));
+
+      let fault = Math.max(4, Math.min(58, (9 - f) * 6 + (page === "LRU" ? -4 : page === "OPT" ? -8 : 3) + workloadSeed * 2));
+
+      const deadEl = document.getElementById("mDeadlock");
+      if (lock === "NONE") {
+        deadEl.textContent = "Circular Wait!";
+        deadEl.style.color = "var(--danger)";
+      } else if (sched === "PRIO" && q <= 2) {
+        deadEl.textContent = "Context Switch Tinggi";
+        deadEl.style.color = "var(--warn)";
+      } else {
+        deadEl.textContent = "Aman";
+        deadEl.style.color = "var(--accent-2)";
+      }
+
+      document.getElementById("mWait").textContent = `${wait} ms`;
+      document.getElementById("mFault").textContent = `${fault}%`;
+    }
+
+    function confirmStep(n) {
+      confirmed[n] = true;
+      document.getElementById(`box${n}`).classList.add("done");
+      const tag = document.getElementById(`tag${n}`);
+      tag.textContent = "Terkonfirmasi";
+      tag.classList.add("ok");
+      const count = Object.values(confirmed).filter(Boolean).length;
+      document.getElementById("doneCount").textContent = `${count} / 3`;
+      updateSim();
+    }
+
+    function injectRandomWorkload() {
+      workloadSeed = (workloadSeed % 5) + 1;
+      updateSim();
+      generateAiCaseAndFeedback();
+    }
+
+    function generateAiCaseAndFeedback() {
+      const q = parseInt(document.getElementById("quantumSlider").value, 10);
+      const f = parseInt(document.getElementById("frameSlider").value, 10);
+      const sched = document.getElementById("schedSelect").value;
+      const page = document.getElementById("pageSelect").value;
+      const lock = document.getElementById("lockSelect").value;
+      const doneTotal = Object.values(confirmed).filter(Boolean).length;
+
+      const variants = [
+        "Variasi Latihan #A: Muncul 4 proses I/O-bound dan 2 proses CPU-bound (burst 12 ms & 15 ms) saat kanal utama sibuk.",
+        "Variasi Latihan #B: Working-set aktif membutuhkan 5 frame, namun 1 frame ditahan proses berprioritas rendah.",
+        "Variasi Latihan #C: Proses P1 memegang Mutex-A dan meminta Mutex-B, sementara P2 memegang Mutex-B dan meminta Mutex-A."
+      ];
+      const selectedVariant = variants[(workloadSeed + q + f) % variants.length];
+
+      let diagnosis = "";
+      if (q <= 2) {
+        diagnosis += "- Time quantum terlalu kecil (<= 2 ms): analoginya pintu air terlalu sering dibuka-tutup sehingga overhead context switch meningkat.\n";
+      } else if (q >= 8 && sched === "RR") {
+        diagnosis += "- Time quantum besar (>= 8 ms) pada Round Robin: responsivitas proses interaktif/I/O cenderung mendekati FCFS.\n";
+      } else {
+        diagnosis += "- Time quantum dan kebijakan penjadwalan berada pada rentang seimbang untuk mengamati trade-off respons dan throughput.\n";
+      }
+
+      if (f <= 3) {
+        diagnosis += "- Jumlah frame terbatas (<= 3): perhatikan potensi page fault tinggi saat working-set melampaui kapasitas frame.\n";
+      } else {
+        diagnosis += `- Kapasitas ${f} frame dengan strategi ${page} membantu mempertahankan halaman yang sering diakses.\n`;
+      }
+
+      if (lock === "NONE") {
+        diagnosis += "- Peringatan Deadlock: tanpa urutan lock yang konsisten, kondisi Circular Wait pada Coffman conditions berpotensi terjadi.\n";
+      } else {
+        diagnosis += `- Mekanisme ${lock} mencegah kebuntuan jalur sumber daya.\n`;
+      }
+
+      const promptQuestion =
+        lock === "NONE"
+          ? "Pertanyaan Analisis: Syarat Coffman mana yang paling langsung dipatahkan jika Anda mengubah aturan menjadi Ordered Resource Allocation, dan apa dampak sampingnya terhadap urutan proses?"
+          : "Pertanyaan Analisis: Jika beban proses pada variasi latihan di atas meningkat 2x lipat, parameter mana (quantum, jumlah frame, atau kebijakan penggantian) yang paling dulu membatasi kinerja sistem dan mengapa?";
+
+      document.getElementById("aiOutput").textContent =
+        `[Status Titik Interaksi Terkonfirmasi: ${doneTotal}/3]\n\n` +
+        `1. VARIASI LATIHAN OTOMATIS (GENAI)\n${selectedVariant}\n\n` +
+        `2. EVALUASI KEPUTUSAN ANDA\n${diagnosis}\n` +
+        `3. TANTANGAN REFLEKSI\n${promptQuestion}`;
+    }
+
+    updateSim();
+  </script>
+</body>
+</html>
